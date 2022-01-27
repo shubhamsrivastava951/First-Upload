@@ -18,10 +18,10 @@ This is my first upload on Github ( Learning Phase)
 * The main task of this assignment is to apply different clustering methods on the two datasets and to find the best model with optimal parameters. In this assignment, you should use at least two different clustering evaluation/validation metrics for each clustering method and present and explain the evaluation results
 
 In this assignment, you will be given the following two datasets:
-#Travel Reviews Dataset: 
+# Travel Reviews Dataset: 
 * This dataset contains reviews by travellers in 10 categories on destinations across East Asia. Each rating is mapped as Excellent(4), Very Good(3), Average(2), Poor(1), and  Terrible(0) and the average rating per traveller is reported. There is no gold cluster for this dataset.
 
-#ICMLA 2014 Accepted Papers Dataset
+# ICMLA 2014 Accepted Papers Dataset
 * This dataset comprises the metadata for the 2014 ICMLA conference's accepted papers, including ID, paper titles, author's keywords, and abstracts. The column ‘session’ would represent the gold cluster.
 
 ![](/Images/Clustering.png)
