@@ -9,4 +9,4 @@ This is my first upload on Github ( Learning Phase)
 *then I have evaluated  multiple  classification  algorithms:  K-Nearest  Neighbour,  Logistic Regression,  Naïve  Bayes,  Decision  Tree,  Support  Vector  Machine  and  ensembles  -Bagging,  Boosting  (AdaBoost, Gradient Boosting) and Random Forest.
 *These will then be evaluated  using the stratified 10-fold cross validation method. 
 
-![](/images/Classificatio.png)
+![](/Images/Classificatio.png)
