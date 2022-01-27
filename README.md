@@ -1,5 +1,4 @@
 # Machine-Learning-Projects
-This is my first upload on Github ( Learning Phase)
 
 # [Classification Project](https://github.com/shubhamsrivastava951/Machine-Learning-Projects/blob/main/ML_Classification.py)
 
