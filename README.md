@@ -1,4 +1,4 @@
-# Machine-Learning-Projects
+# ML-DL Projects
 
 # [ML Classification Project](https://github.com/shubhamsrivastava951/Machine-Learning-Projects/blob/main/ML_Classification.py)
 
