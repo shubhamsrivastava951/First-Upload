@@ -1,6 +1,6 @@
 # Machine-Learning-Projects
 
-# [Classification Project](https://github.com/shubhamsrivastava951/Machine-Learning-Projects/blob/main/ML_Classification.py)
+# [ML Classification Project](https://github.com/shubhamsrivastava951/Machine-Learning-Projects/blob/main/ML_Classification.py)
 
 * The dataset for this assignment is the Breast Cancer Wisconsin. It contains 699 examples described by 9 numeric attributes. There are two classes – class1 and class2. The features are computed from a digitized image of a fine needle aspirate of a breast mass of the subject. Benign breast cancer tumours correspond to class1 and malignant breast cancer tumours correspond to class2. 
 
