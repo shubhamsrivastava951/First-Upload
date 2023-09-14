@@ -4,7 +4,7 @@
 <span align="center"> <h3> <a href="https://shubhamportfolio0211.netlify.app/">Shubham Srivastava</a></h3> </span>
 
 
-This repository contains the files for various machine learning and deep learning algorithms that have been used in our submission for Credit Card Fraud Detection using Machine Learning and Deep Learning Techniques paper at the 2020 3rd International Conference on Intelligent Sustainable Systems (ICISS). The paper can be found [here](https://ieeexplore.ieee.org/abstract/document/9316002).  
+This repository contains the files for various machine learning and deep learning algorithms that have been used for Credit Card Fraud Detection using Machine Learning and Deep Learning Techniques paper at the 2020 3rd International Conference on Intelligent Sustainable Systems (ICISS). The paper can be found [here](https://ieeexplore.ieee.org/abstract/document/9316002).  
 A list of the ML and DL algorithms that have been used are:  
 - [Multiple Linear Regression](https://github.com/shubhamsrivastava951/ML---DL-Projects-/blob/main/Credit-Card-Fraud-Detection-using-Machine-Learning-and-Deep-Learning-Techniques-main/Credit-Card-Fraud-Detection-using-Machine-Learning-and-Deep-Learning-Techniques-main/Multiple%20Linear%20Regression.ipynb)
 - [Logistic Regression](https://github.com/shubhamsrivastava951/ML---DL-Projects-/blob/main/Credit-Card-Fraud-Detection-using-Machine-Learning-and-Deep-Learning-Techniques-main/Credit-Card-Fraud-Detection-using-Machine-Learning-and-Deep-Learning-Techniques-main/Logistic%20Regression%20Classifier.ipynb)
