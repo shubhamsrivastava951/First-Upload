@@ -1,0 +1,379 @@
+---
+title: "Domestic violence rates in NSW local government areas."
+author: "510282930"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+
+```
+
+```{r loading libraries, include=FALSE}
+library(openxlsx)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(data.table)
+library(ggcorrplot)
+library(ggpubr)
+
+```
+
+```{r loading data, include=FALSE}
+
+# load offence data
+offence.data <- read.csv('/Users/poojamahajan/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/USYD/SEM-3/DATA5207- Data Analysis in the Social Sciences/Assignment/Research Project/RCI_offencebymonth1.csv')
+
+#load characteristics data
+char.data <- read.csv('/Users/poojamahajan/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/USYD/SEM-3/DATA5207- Data Analysis in the Social Sciences/Assignment/Research Project/2016Census_G01_NSW_LGA.csv')
+
+#load age data (G04)
+age.data <-read.csv('/Users/poojamahajan/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/USYD/SEM-3/DATA5207- Data Analysis in the Social Sciences/Assignment/Research Project/2016Census_G03_NSW_LGA.csv')
+
+#load unemployment_rate data (G40)
+unemp.data <- read.csv('/Users/poojamahajan/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/USYD/SEM-3/DATA5207- Data Analysis in the Social Sciences/Assignment/Research Project/2016Census_G40_NSW_LGA.csv')
+
+#load indigenous data (G07)
+indi.data <-read.csv('/Users/poojamahajan/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/USYD/SEM-3/DATA5207- Data Analysis in the Social Sciences/Assignment/Research Project/2016Census_G07_NSW_LGA.csv')
+
+#load marital_status data
+marital.data <-read.csv('/Users/poojamahajan/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/USYD/SEM-3/DATA5207- Data Analysis in the Social Sciences/Assignment/Research Project/2016Census_G06_NSW_LGA.csv')
+
+
+```
+
+```{r data manipulation , include=FALSE}
+#filter only domestic violence related cases
+data1<-offence.data%>%
+  dplyr::filter(grepl('Domestic violence related assault', Subcategory))
+
+#remove unwanted variables
+
+#aggregate avg counts of DV related offences per LGA between 1995-2020. As we are not looking at time series.
+data1$avg_offences <- apply(data1[,4:311], 1, mean)
+
+#select relevant columns in offenses data
+data1<-data1 %>%
+    dplyr::select(LGA, avg_offences)
+
+#select relevant columns in characteristics data
+char.data1<-char.data %>%
+  mutate(female_ratio = (Tot_P_F/Tot_P_P)) %>%
+  mutate(nonAus_ratio = ((Birthplace_Elsewhere_P + Lang_spoken_home_Oth_Lang_P)/(Birthplace_Australia_P + Lang_spoken_home_Eng_only_P + Birthplace_Elsewhere_P + Lang_spoken_home_Oth_Lang_P)))%>%
+  dplyr::select(LGA, nonAus_ratio, female_ratio, Tot_P_P,LGA_CODE_2016 )
+
+#select relevant columns in age data
+age.data1<-age.data %>%
+  group_by(LGA)%>%
+  mutate(age_ratio = Total_15_24_yr/Total_Total) %>%
+  dplyr::select(LGA, age_ratio)
+
+#select relevant columns in unemployment_rate data
+unemp.data1<-unemp.data %>%
+  group_by(LGA)%>%
+  mutate(unemp_ratio = (Percent_Unem_loyment_M/100)) %>%
+  dplyr::select(LGA, unemp_ratio)
+
+#select relevant columns in indigenous data
+indi.data1<-indi.data %>%
+  group_by(LGA)%>%
+  mutate(indi_ratio = (Tot_Indigenous_P/(Tot_Indigenous_P+Tot_Non_Indigenous_P))) %>%
+  dplyr::select(LGA, indi_ratio)
+
+#select relevant columns in marital_status data
+marital.data1<-marital.data%>%
+  group_by(LGA_CODE_2016)%>%
+  mutate(marital_ratio=M_Tot_Not_married/P_Tot_Total)%>%
+  dplyr::select(LGA_CODE_2016, marital_ratio)
+
+#load education_status data
+
+#load population count by region data
+
+merged_df_1=merge(data1, char.data1, by="LGA")
+merged_df_2=merge(merged_df_1, age.data1, by="LGA")
+merged_df_3=merge(merged_df_2, unemp.data1, by="LGA")
+merged_df_5=merge(merged_df_3, indi.data1, by="LGA")
+merged_df_4=merge(merged_df_5, marital.data1, by="LGA_CODE_2016")
+
+merged_df_4<-merged_df_4 %>%
+  group_by(LGA)%>%
+  mutate(offenses_ratio = (avg_offences/Tot_P_P)*100000)%>%
+  dplyr::select(LGA,offenses_ratio, age_ratio, nonAus_ratio, female_ratio, indi_ratio, unemp_ratio,marital_ratio)
+
+
+merged_df_4
+```
+
+
+
+```{r , include=FALSE}
+scaled_df <- merged_df_4 %>%
+  dplyr::select(LGA, offenses_ratio)
+
+scaled_df$female_ratio = scale(merged_df_4$female_ratio)
+scaled_df$nonAus_ratio = scale(merged_df_4$nonAus_ratio)
+scaled_df$age_ratio = scale(merged_df_4$age_ratio)
+scaled_df$unemp_ratio = scale(merged_df_4$unemp_ratio)
+scaled_df$indi_ratio = scale(merged_df_4$indi_ratio)
+scaled_df$marital_ratio = scale(merged_df_4$marital_ratio)
+#scaled data
+head(scaled_df)
+```
+
+# Introduction 
+
+Question: What explains domestic violence rates in NSW local government areas?
+
+Today, we live in the modern world, 21st century where free will is taken for granted. It is supposed to be a healthier and prosperous environment where everyone should feel safe and essential. But studies show a different picture. The delusion of free will is taken up by uncountable factors, one of which is domestic violence (Tolman, R.M. and Raphael, J., 2000).  It can be defined as an act or acts of a person overpowering another and regulating their choices. It can be sexual or emotional, or it can be physiological or emotional (Walby, S., 2004). Studies have shown most people are not even aware that domestic violence is more than just sexual assaults on the other person, and females are not the usual for a victim (Smith, L.J., 1989). In fact, according to the Statistics bureau of Australia for every three females there is an adult male which is a victim to domestic violence (Johnson, M.P., 2005). Domestic violence is no joke! One in every three cases leads to severe injuries even fatalities to a person or to the will to survive in a person. Today, this report would highlight different factors and how it leads to domestic violence in this covid stuck 21st century (Barber, C.F., 2008). This report commences with a brief introduction as stated above, followed by literature review, description of datasets and methodologies used (selection of model and its justification). The next part of the report illustrates the results delivered by the model. Finally, the last section concludes all of the above, summarizes key points, tying results to literature. It also discusses limitations of results and reflects on future scope of this research. 
+
+
+\vspace{6mm}
+
+# Literature and theory
+
+An array of societies debate that men are the cause of domestic violence and women are the victimsa (Kumar A., 2005). Well, they are not a 100 percent wrong, according to surveys conducted Australia wide it was found men in intimate relationships who earned less than their partner or are unemployed are mostly among the accused, around 40 percent of all cases are just that. They seem to have cracked the ego booth inside them and take out the frustration on the partners (Pagelow, M.D., 1992). Being said that more recently due to the awareness spread in the public people have started to come out and got given the help they required (Cox ,2015). These recent surveys, as discussed above showed that men are also the victims of domestic violence (Stavrou et al. 2016). They are bullied and beaten and tortured but due to the fear of what the society would think most of them would not come out of it (Semahegn, A. and Mengistie, B., 2015). I think we have failed as a society in this matter. 
+
+Another factor which are found in most domestic abuse cases are the indigenous people (Weissman, 2007). People who are not educated enough, or are not at par with the equality theory. Many women of non-English speaking societies have domestic abuse physical or emotional common in them. It is not always the partner that is the abuser but it can be anybody parents, siblings, relatives and in some cases even friends they are abused in every stage of their lives from puberty until they reach their death bed. The abuse of freedom in childhood, the abuse of relationship in adult life and the abuse of unable to do anything in the old life, are all examples of domestic violence. It starts as a onetime thing but sooner rather than later it becomes a habit and the relationship becomes toxic (Roy, 1997). 
+It might come as a shock to one but the cases coming now-a-days show that the culprits of domestic abuse are people between the age of 15-25 (Tauchen et al, 1991). There are a lot of ways such acts can be carried out. One of them is the effect of social media and the ‘influencers’ who present a fake life on social media and live their real life completely opposite to what they live usually (Semahegn, A. and Mengistie, B., 2015). Seems like you have heard this before? We all who use social media are emotional and psychological victims of domestic abuse, we just don’t realize it yet. Another group that is popular among the people who commit such crimes are unmarried or divorced men (Roy, 1997). Due to the stereotypes of the society these men are often found in situations hurting someone by the means of domestic violence. Due to financial stress and loneliness these men tend to use violence as the means to keep them entertained or in some cases survive (Ganley,1995). This has been a recurring issue in the courts of NSW from 2015-2019.Being said that, the cases registered for domestic violence are about half the picture of what is happening in the society (Kaur, R. and Garg, S., 2008). People need to be more aware and welcoming to the victims of domestic violence and the citizens of Australia have been on an exponential incline in terms of it.
+
+\vspace{6mm}
+```{r, someVar, echo=FALSE}
+merged_df_4<- na.omit(merged_df_4)
+merged_copy <- merged_df_4                                    # Top N highest values by grou
+ggplot(merged_copy, aes(x=LGA, y=offenses_ratio, las=2)) + 
+ geom_bar(stat = "identity")+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+theme(text = element_text(size = 6))+ ggtitle("Number of domestic violence incidents across LGA")
+```
+\vspace{6mm}
+
+# Data and methodology 
+
+Data source: In order to conduct this research, two datasets have been used. The number of criminal offences have been extracted from the Census DataPacks presented by the Bureau of Crime Statistics and Research (BOSCAR)(Offense open data | NSW Bureau of Crime Statistics and Research, 2022). It has a csv file containing 8,122 rows and 312 columns. This data comprises of records of criminal incidents logged from 1995 to 2021. Another data source used in this experiment is the Census dataset provided by the Australian Bureau of Statistics (Census DataPacks | Australian Bureau of Statistics, 2022). It has socioeconomic and demographic information about people in New South Wales local government areas, for instance gender, age, education level, employment status, income level etc.
+
+
+Data Preprocessing: The data preprocessing involved the following stages:
+
+1. Removing unnecessary data: The relevant columns were selected from each file and were renamed for better understanding. Some LGAs were removed from the BOSCAR dataset because those LGAs were either irrelevant or were not present in the Census dataset (for eg. "In Custody").
+
+2. Handling missing values: The missing values in the offense count dataset were replaced by their average values. This is because the final variable taken into consideration is the average count of offense for each LGA from 1995-2021. Also,the mean imputation allowed the record to exist in the dataset with minimal manipulation in this case.
+
+3. Aggregating columns: As stated above, the offense count column was aggregated for all the years for each local government area and were used to generate the average offence count. This is because this research intends to study the factors influencing the domestic violence rates in NSW local government areas by establish a theory of ecological crime rates and an explanatory model.
+
+4. Filtering: A filter was applied in the Subcategory column of the offence dataset. It was used because we wanted to extract the subcategory 'Domestic violence related assault' amongst all the others.
+  
+5. Merging datasets: Both these datasets were merged into a single dataset using LGA or LGA_Code_2016. 
+
+6. Standardizing: Data was standardized so that the model is biased by the impact of larger value variable over other variables. The scaling transformation resulted with all the variables having a mean of 0 and standard deviation as 1. 
+
+7. Data transformation: For demographic variables, the following ratios were calculated for each of the variable:
+
+Age population rate: The ratio of number of people between 15-24 years to the total population count.
+Female population rate: The ratio of number of females to the total population count.
+Non-Australian Rate: The ratio of number of people born outside Australia or who speak languages other than English to the total population count including total population count.
+Indigenous Rate: The ratio of number of Aboriginal and/or Torres Strait to the total population count.
+Unemployment Rate: The ratio of the number of unemployed males to the total population count.
+Marital Status Rate: The ratio of single males to the total population count.
+
+Variable selection: The variables taken into consideration are LGA, number of criminal offences from BOSCAR dataset and gender(female population), age(15-24 years), male unemployment, indigenous women, people not belonging to Australia, single marital status from Census dataset.They are:
+
+1. Independent variable: Average number of offence count for each LGA.
+2. Dependent variable: Age population rate, Female population rate, Non-Australian Rate, Indigenous Rate, Unemployment Rate, Marital Status Rate
+
+\vspace{6mm}
+
+# Descriptive Analytics
+As part of descriptive analytics, a table of statistical summary was created to evaluate the mean, median, standard deviation of the independent variables and dependent variables. It can be observed that the mean of the criminal offence is around 44 and the females constitute 50% of the total population with an standard deviation of 0.01. The average rate of non-Australians, people in the slab of 15-24 years,indigenous, unemployed, single men are 0.14, 0.11, 0.07, 0.06 respectively with a standard deviation of 0.07, 0.11, 0.04, 0.06 respectively.
+
+\vspace{6mm}
+```{r statistical summary , echo=FALSE}
+summary_table <- merged_df_4 %>% 
+  dplyr::select(offenses_ratio, female_ratio, nonAus_ratio, age_ratio, indi_ratio, unemp_ratio, marital_ratio) %>% 
+  psych::describe() %>%
+  base::as.data.frame() %>%  
+  dplyr::select(mean, sd, median, min, max)
+  
+setattr(summary_table, "row.names", c("LGA", "Domestic Violence per 100k","Female population","Non-Australian population count","15-24 years age population count","Indigenous rate","Male unemployment rate", "Male Not-Married rate"))
+ 
+summary_table <- round(summary_table,2)
+knitr::kable(summary_table,caption = "Descriptive statistics", booktabs=T)
+```
+\vspace{6mm}
+A combination of histogram and boxplot was created to analyse the distribution of the average offence count. It can be observed that the plot is right skewed implying that majority of the values are directed towards the left. The plot is plummeting towards the right implying that very few domestic violence incidents were reported less frequently. 
+\vspace{6mm}
+```{r hist, echo=FALSE}
+
+#histogram for offenses_ratio
+plot1 <- merged_df_4 %>% 
+  dplyr::select(offenses_ratio) %>%
+  ggplot(aes(x="", y = offenses_ratio)) +
+  geom_boxplot(fill = "lightblue", color = "black") + 
+  coord_flip() +
+  theme_classic() +
+  xlab("") +
+  theme(axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
+
+plot2 <- merged_df_4 %>% 
+  dplyr::select(offenses_ratio) %>%
+  ggplot() +
+  geom_histogram(aes(x = offenses_ratio),
+                 position = "identity", binwidth = 5, 
+                 fill = "lightblue", color = "black") +
+  ylab("Frequency") +
+  theme_classic()
+
+hist1<-egg::ggarrange(plot2, plot1, heights = 2:1)
+```
+\vspace{6mm}
+A scatter plat was created to analyse the correlation between the dependent variable and the independent variable. It can be observed that  with the increase in the population of women, there is a decrease in the number of cases of domestic violence. There was a straight line and the number of domestic violence cases did not vary much when compared with the population rate of 15-24 years of age. Marital status increased the domestic violence cases are found higher in 20% of marital status rate. Domestic violence cases did not have any clear relationship with the non Australian population growth as most LGAs have low domestic violence cases. With the increase in male unemployment rate and Indigenous population rate most LGA were found with less domestic violence cases with increase in domestic violence cases with the increase in male unemployment rate and indigenous population rate.
+\vspace{6mm}
+```{r, sp1, echo=FALSE}
+#scatterplot
+sc1<-ggplot(merged_df_4,aes(y=offenses_ratio, x=female_ratio)) +
+  geom_point(aes(colour = LGA)) +
+  labs(x = "Female population rate (%)", y=" ") +
+  scale_x_continuous(labels =scales:: percent_format(accuracy = 1)) +
+  theme_classic() +
+  theme(legend.position="none")+
+  geom_smooth(method=lm)+
+  theme(plot.title = element_text(size = 4))
+
+sc2<-ggplot(merged_df_4,aes(y=offenses_ratio, x=nonAus_ratio)) +
+  geom_point(aes(colour = LGA)) +
+  labs(x = "Non-Australian population rate (%)", y=" ") +
+  scale_x_continuous(labels =scales:: percent_format(accuracy = 1)) +
+  theme_classic() +
+  theme(legend.position="none")+
+  geom_smooth(method=lm)
+
+sc3<-ggplot(merged_df_4,aes(y=offenses_ratio, x=age_ratio)) +
+  geom_point(aes(colour = LGA)) +
+  labs(x = "15-24 years of age population rate (%)", y=" ") +
+  scale_x_continuous(labels =scales:: percent_format(accuracy = 1)) +
+  theme_classic() +
+  theme(legend.position="none")+
+  geom_smooth(method=lm)
+
+sc4<-ggplot(merged_df_4,aes(y=offenses_ratio, x=unemp_ratio)) +
+  geom_point(aes(colour = LGA)) +
+  labs(x = "Male unemployment rate (%)", y=" ") +
+  scale_x_continuous(labels =scales:: percent_format(accuracy = 1)) +
+  theme_classic() +
+  theme(legend.position="none")+
+  geom_smooth(method=lm)
+
+sc5<-ggplot(merged_df_4,aes(y=offenses_ratio, x=marital_ratio)) +
+  geom_point(aes(colour = LGA)) +
+  labs(x = "Marital status rate (%)", y=" ") +
+  scale_x_continuous(labels =scales:: percent_format(accuracy = 1)) +
+  theme_classic() +
+  theme(legend.position="none")+
+  geom_smooth(method=lm)
+
+sc6<-ggplot(merged_df_4,aes(y=offenses_ratio, x=indi_ratio)) +
+  geom_point(aes(colour = LGA)) +
+  labs(x = "Indigenous population rate (%) ", y=" ") +
+  scale_x_continuous(labels =scales:: percent_format(accuracy = 1)) +
+  theme_classic() +
+  theme(legend.position="none")+
+  geom_smooth(method=lm)
+
+#displays graphs in grid form
+
+plot_all<-egg::ggarrange(sc1,sc2,sc3, sc4, sc5, sc6, ncol=2, nrow=3)
+```
+\vspace{6mm}
+
+# Poisson Regression
+In order to evaluate the impact of factors affecting the rate of domestic violence in local government areas, Poisson model was selected. This is because of several reasons:
+
+1. Previous research states that Poisson models are best models when the dependent variable is a measure of count. In this case, the dependent variable is the average number of domestic violence cases calculated for each LGA over a specific time-frame(Bening, and Korolev, 2012) .
+
+2. Poisson modeling allows us to evaluate which variables have statistical significance over the outcome variable. For instance, in this case, poisson modeling will determine if the variables selected (age, gender, unemployment ratio etc) have some statistical significance over domestic violence rates or not (Karlis and Ntzoufras, 2003).
+
+3. Since neither of the variables are categorical, hence logistic regression cannot be used. Similarly since the outcome variable is not continuous either, linear regression wouldn't do justice to the experiment which involves aggregated count measure (Peixoto,2020).
+
+
+A baseline model was constructed by using a single independent variable (female_ratio) against the dependent variable (offence_ratio). It used the glm function with the parameters 'family= Poisson' and link =log. The model performance is gauged on the p-values and pseudo R^2 to verify the dispersion of the variable. From the base model it can be observed that 19.7 percent of variation caused by the factor female_ratio in domestic_violence rate per 100000 people. Additionally the value of slope is negative 0.35, implying one unit increase in the female_ratio will bring about a decrease of factor of e^{0.35} unit change in the average rate of domestic violence. This led to the addition of more independent variables through permutation and combination. 
+
+\vspace{6mm}
+```{r ,m2, echo=FALSE}
+
+model1 <- glm(offenses_ratio ~  female_ratio,
+                         family=poisson(link = log), 
+                         data=scaled_df)
+summary(model1)
+1-(model1$deviance/model1$null)
+```
+\vspace{6mm}
+From the final model it can be observed that 19.7 percent of variation caused by the factor female_ratio in domestic_violence rate per 100000 people. Additionally the value of slope is negative 0.35, implying one unit increase in the female_ratio will bring about a decrease of factor of e^{0.0.2} unit change in the average rate of domestic violence. 
+```{r ,m1, echo=FALSE}
+model2 <- glm(offenses_ratio ~ age_ratio + female_ratio + nonAus_ratio + unemp_ratio + indi_ratio+marital_ratio,
+                         family=poisson(link = log), 
+                         data=scaled_df)
+
+summary(model2)
+1-(model2$deviance/model2$null)
+```
+\vspace{6mm}
+
+# Results
+By keeping a track of the p-values, and pseudo R^2 values it can be concluded that the best model is the one that has all the variables included. The following observations can be made from the model summary:
+
+1. Overall, the domestic violence cases were not directly related to non-Australian and 15-24 years of age population rate. THe LGA are mostly around 45-52% female population rate and about 10% of 15-24 years of age population rate.
+
+2. However, there was a significant decrease in domestic violence cases with the increase in female population rate. Most LGAs having more than 40% of females had less cases of domestic violence.
+
+3. Furthermore,There was an increase in domestic violence cases  due to the increase in male unemployment rate but its considerable until the employment rate goes higher than 10%. 
+
+4. Similarly, the increasing number of indigenous population more than 20% is harmful to the society causing more than a 100 domestic violence cases per 100,000 cases.
+
+\vspace{6mm}
+
+# Conclusion 
+From what has been discussed above, it would be wise to say that domestic violence is no joke but a serious case of felony and it should not be taken lightly. After interpreting the above data, the four main factors which affect or are affected by domestic violence are male unemployment, single or divorced men, people in the ages of fifteen and twenty-five, and indigenous or non-English speaking women. The theory regarding female population proved to be contradicting with the model's output. However the model showcased that factors such as male unemployment, young age, indeginous group, non-residents of Australia who speak different languages are more prone to domestic violence cases. Due to the lack of people opening up to such domestic violence cases with almost 50% people not reporting it calls for awareness and future studies required on the different roles unemployment in men can cause to domestic violence.The people in Australia are becoming more and more aware and welcoming to this issue of the 21st century and maybe not today but one day we would be able to remove this virus from our lives. 
+
+\vspace{6mm}
+# Bibliography 
+
+Abs.gov.au. 2022. Census DataPacks | Australian Bureau of Statistics. [online] Available at: <https://www.abs.gov.au/census/find-census-data/datapacks> [Accessed 20 May 2022].
+
+Barber, C.F., 2008. Domestic violence against men. Nursing Standard (through 2013), 22(51), p.35.
+
+Bening, V.E. and Korolev, V.Y., 2012. Generalized Poisson models and their applications in insurance and finance. In Generalized Poisson Models and their Applications in Insurance and Finance. De Gruyter. 
+
+Bocsar.nsw.gov.au. 2022. Offense open data | NSW Bureau of Crime Statistics and Research. [online] Available at: <https://www.bocsar.nsw.gov.au/Pages/bocsar_datasets/Offence.aspx> [Accessed 25 may 2022]. 
+
+Dunkley, A and Phillips, J. 2015, Domestic Violence in Australia: A quick guide to the issues, Parliament of Australia, Department of Parliamentary Services.
+
+Ganley, A.L., 1995. Understanding domestic violence. Improving the health care response to domestic violence: A resource manual for health care providers, pp.15-42.
+
+Johnson, M.P., 2005. Domestic Violence: It’s Not about Gender: Or Is It?. Journal of Marriage and the Family, pp.1126-1130.
+
+Kaur, R. and Garg, S., 2008. Addressing domestic violence against women: An unfinished agenda. Indian journal of community medicine: official publication of Indian Association of Preventive & Social Medicine, 33(2), p.73.
+
+Karlis, D. and Ntzoufras, I., 2003. Analysis of sports data by using bivariate Poisson models. Journal of the Royal Statistical Society: Series D (The Statistician), 52(3), pp.381-393.
+
+Kumar A. Domestic violence against men in India: A perspective. Journal of Human Behavior in the Social Environment. 2012 Mar 28;22(3):290-6
+
+Pagelow, M.D., 1992. Adult victims of domestic violence: Battered women. Journal of Interpersonal Violence,7(1), pp.87-120.
+
+Peixoto, T.P., 2020. Latent Poisson models for networks with heterogeneous density. Physical Review E, 102(1), p.012309.
+
+Roy, M. ed., 1977. Battered women: A psychosociological study of domestic violence. New York, NY: Van Nostrand Reinhold Company.
+
+Semahegn, A. and Mengistie, B., 2015. Domestic violence against women and associated factors in Ethiopia; systematic review. Reproductive health, 12(1), pp.1-12.
+
+Smith, L.J., 1989. Domestic violence: An overview of the literature. HM Stationery Office
+
+Stavrou, E, Poynton, S & Weatherburn, S. November 2016, Intimate partner violence against women in Australia: related factors and help-seeking behaviours, NSW Bureau of Crime Statistics and Research
+
+Tauchen, H.V., Witte, A.D. and Long, S.K., 1991. Domestic violence: A nonrandom affair. International Economic Review, pp.491-511.
+
+Tolman, R.M. and Raphael, J., 2000. A review of research on welfare and domestic violence. Journal of social issues, 56(4), pp.655-682.
+
+Walby, S., 2004. The cost of domestic violence. 
+
+Weissman, D.M., 2007. The personal is political-and economic: Rethinking domestic violence. BYU L. Rev., p.387.
